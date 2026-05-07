@@ -1,3 +1,5 @@
+using System;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -143,6 +145,52 @@ public partial class SettingsWindow : Window
             UpdateOverlay();
         }
         base.OnPreviewMouseDown(e);
+    }
+
+    private void ExportBtn_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var json = JsonSerializer.Serialize(_config);
+            var bytes = System.Text.Encoding.UTF8.GetBytes(json);
+            var b64 = Convert.ToBase64String(bytes);
+            Clipboard.SetText("CHX-" + b64);
+            MessageBox.Show("Profile code copied to clipboard!", "Export Success", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch { }
+    }
+
+    private void ImportBtn_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var text = Clipboard.GetText();
+            if (text.StartsWith("CHX-"))
+            {
+                var b64 = text.Substring(4);
+                var bytes = Convert.FromBase64String(b64);
+                var json = System.Text.Encoding.UTF8.GetString(bytes);
+                var imported = JsonSerializer.Deserialize<CrosshairConfig>(json);
+                if (imported != null)
+                {
+                    _config = imported;
+                    _overlay.Config = _config;
+                    _loading = true;
+                    LoadUI();
+                    _loading = false;
+                    UpdateOverlay();
+                    MessageBox.Show("Profile successfully imported!", "Import Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            }
+            else
+            {
+                MessageBox.Show("Invalid profile code in clipboard.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+        catch
+        {
+            MessageBox.Show("Failed to import profile code.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
     }
 
     private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
