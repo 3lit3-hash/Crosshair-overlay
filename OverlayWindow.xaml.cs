@@ -23,16 +23,25 @@ public partial class OverlayWindow : Window
         Left = 0;
         Top = 0;
 
-        MouseHook.OnRightDown += () => 
+        MouseHook.OnMouseDownAction += (btn) => 
         {
-            if (Config.SmartHide) CrosshairCanvas.Visibility = Visibility.Hidden;
+            if (Config.SmartHide && btn == Config.SmartHideBind) CrosshairCanvas.Visibility = Visibility.Hidden;
         };
-        MouseHook.OnRightUp += () => 
+        MouseHook.OnMouseUpAction += (btn) => 
         {
-            if (Config.SmartHide) CrosshairCanvas.Visibility = Visibility.Visible;
+            if (Config.SmartHide && btn == Config.SmartHideBind) CrosshairCanvas.Visibility = Visibility.Visible;
+        };
+        KeyboardHook.OnKeyDownAction += (key) => 
+        {
+            if (Config.SmartHide && key == Config.SmartHideBind) CrosshairCanvas.Visibility = Visibility.Hidden;
+        };
+        KeyboardHook.OnKeyUpAction += (key) => 
+        {
+            if (Config.SmartHide && key == Config.SmartHideBind) CrosshairCanvas.Visibility = Visibility.Visible;
         };
         
         MouseHook.Start();
+        KeyboardHook.Start();
     }
 
     private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -93,6 +102,7 @@ public partial class OverlayWindow : Window
     protected override void OnClosed(EventArgs e)
     {
         MouseHook.Stop();
+        KeyboardHook.Stop();
         base.OnClosed(e);
     }
 }

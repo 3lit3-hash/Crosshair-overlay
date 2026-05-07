@@ -31,7 +31,11 @@
         <CheckBox x:Name="CenterDotCheck" Content="Center Dot" Checked="Check_Changed" Unchecked="Check_Changed"/>
         <CheckBox x:Name="OutlineCheck" Content="Outline (Drop Shadow &amp; Stroke)" Checked="Check_Changed" Unchecked="Check_Changed"/>
         <CheckBox x:Name="TShapeCheck" Content="T-Shape (Hide top line)" Checked="Check_Changed" Unchecked="Check_Changed"/>
-        <CheckBox x:Name="SmartHideCheck" Content="Smart Hide (Hide on Right Click)" Checked="Check_Changed" Unchecked="Check_Changed"/>
+        <CheckBox x:Name="SmartHideCheck" Content="Smart Hide (Hide on hold)" Checked="Check_Changed" Unchecked="Check_Changed"/>
+        <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+            <TextBlock Text="Hide Keybind: " VerticalAlignment="Center" Margin="0,0,10,0"/>
+            <Button x:Name="BindButton" Content="RightButton" Width="150" Height="25" Click="BindButton_Click" Background="#444444" Foreground="White" BorderThickness="0"/>
+        </StackPanel>
 
         <TextBlock Text="Crosshair Color"/>
         <xctk:ColorPicker x:Name="ColorPickerControl" SelectedColorChanged="ColorPicker_SelectedColorChanged" Background="#333333" Foreground="White" BorderThickness="0" Margin="0,5,0,0"/>

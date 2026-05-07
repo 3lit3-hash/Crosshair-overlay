@@ -14,4 +14,5 @@ public class CrosshairConfig
     public bool Outline { get; set; } = true;
     public bool TShape { get; set; } = false;
     public bool SmartHide { get; set; } = false;
+    public string SmartHideBind { get; set; } = "RightButton";
 }
