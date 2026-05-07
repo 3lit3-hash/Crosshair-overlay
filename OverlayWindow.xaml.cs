@@ -31,6 +31,9 @@ public partial class OverlayWindow : Window
     private DispatcherTimer _processTimer;
     private DispatcherTimer _invertTimer;
 
+    private DateTime _lastSwapTime = DateTime.MinValue;
+    private DateTime _lastPanicTime = DateTime.MinValue;
+
     public OverlayWindow(SettingsWindow settings)
     {
         InitializeComponent();
@@ -56,13 +59,21 @@ public partial class OverlayWindow : Window
             
             if (key == Config.PanicKeyBind) 
             {
-                _isPanicHidden = !_isPanicHidden;
-                UpdateVisibility();
+                if ((DateTime.Now - _lastPanicTime).TotalMilliseconds > 200)
+                {
+                    _lastPanicTime = DateTime.Now;
+                    _isPanicHidden = !_isPanicHidden;
+                    UpdateVisibility();
+                }
             }
 
             if (key == Config.SwapProfileBind)
             {
-                _settings.Dispatcher.Invoke(() => _settings.SwitchToNextProfile());
+                if ((DateTime.Now - _lastSwapTime).TotalMilliseconds > 200)
+                {
+                    _lastSwapTime = DateTime.Now;
+                    _settings.Dispatcher.Invoke(() => _settings.SwitchToNextProfile());
+                }
             }
         };
         KeyboardHook.OnKeyUpAction += (key) => 
@@ -185,8 +196,10 @@ public partial class OverlayWindow : Window
         var centerX = (this.Width / 2) + Config.OffsetX;
         var centerY = (this.Height / 2) + Config.OffsetY;
 
+        int offsetRadius = (int)((Config.Gap + Config.Length + Config.Thickness + Config.DotSize) * 1.5 + 5);
+
         IntPtr hdc = GetDC(IntPtr.Zero);
-        uint pixel = GetPixel(hdc, (int)(this.Left + centerX), (int)(this.Top + centerY));
+        uint pixel = GetPixel(hdc, (int)(this.Left + centerX + offsetRadius), (int)(this.Top + centerY + offsetRadius));
         ReleaseDC(IntPtr.Zero, hdc);
 
         byte r = (byte)(pixel & 0x000000FF);
