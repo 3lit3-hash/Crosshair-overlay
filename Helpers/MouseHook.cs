@@ -9,6 +9,8 @@ public static class MouseHook
     private const int WH_MOUSE_LL = 14;
     private const int WM_LBUTTONDOWN = 0x0201;
     private const int WM_LBUTTONUP = 0x0202;
+    private const int WM_RBUTTONDOWN = 0x0204;
+    private const int WM_RBUTTONUP = 0x0205;
 
     [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
     private static extern IntPtr SetWindowsHookEx(int idHook, LowLevelMouseProc lpfn, IntPtr hMod, uint dwThreadId);
@@ -30,6 +32,8 @@ public static class MouseHook
 
     public static event Action? OnLeftDown;
     public static event Action? OnLeftUp;
+    public static event Action? OnRightDown;
+    public static event Action? OnRightUp;
 
     public static void Start()
     {
@@ -58,6 +62,10 @@ public static class MouseHook
                 OnLeftDown?.Invoke();
             else if (wParam == (IntPtr)WM_LBUTTONUP)
                 OnLeftUp?.Invoke();
+            else if (wParam == (IntPtr)WM_RBUTTONDOWN)
+                OnRightDown?.Invoke();
+            else if (wParam == (IntPtr)WM_RBUTTONUP)
+                OnRightUp?.Invoke();
         }
         return CallNextHookEx(_hookID, nCode, wParam, lParam);
     }

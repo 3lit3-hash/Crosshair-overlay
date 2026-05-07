@@ -29,6 +29,8 @@ public partial class SettingsWindow : Window
         OpacitySlider.Value = _config.Opacity;
         CenterDotCheck.IsChecked = _config.ShowCenterDot;
         OutlineCheck.IsChecked = _config.Outline;
+        TShapeCheck.IsChecked = _config.TShape;
+        SmartHideCheck.IsChecked = _config.SmartHide;
         ColorBox.Text = $"{_config.Color.R}, {_config.Color.G}, {_config.Color.B}";
     }
 
@@ -41,6 +43,8 @@ public partial class SettingsWindow : Window
         _config.Opacity = OpacitySlider.Value;
         _config.ShowCenterDot = CenterDotCheck.IsChecked ?? false;
         _config.Outline = OutlineCheck.IsChecked ?? false;
+        _config.TShape = TShapeCheck.IsChecked ?? false;
+        _config.SmartHide = SmartHideCheck.IsChecked ?? false;
         
         var colorParts = ColorBox.Text.Split(',');
         if (colorParts.Length == 3 && 
@@ -51,8 +55,9 @@ public partial class SettingsWindow : Window
             _config.Color = Color.FromRgb(r, g, b);
         }
 
-        ProfileManager.Save(_config);
         _overlay.RedrawCrosshair();
+        if (!_config.SmartHide) 
+            _overlay.CrosshairCanvas.Visibility = Visibility.Visible;
     }
 
     private void Slider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e) => UpdateOverlay();
@@ -61,6 +66,7 @@ public partial class SettingsWindow : Window
 
     private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
     {
+        ProfileManager.Save(_config);
         _overlay.Close();
     }
 }

@@ -32,6 +32,16 @@ public partial class OverlayWindow : Window
 
         MouseHook.OnLeftDown += () => _isShooting = true;
         MouseHook.OnLeftUp += () => _isShooting = false;
+        
+        MouseHook.OnRightDown += () => 
+        {
+            if (Config.SmartHide) CrosshairCanvas.Visibility = Visibility.Hidden;
+        };
+        MouseHook.OnRightUp += () => 
+        {
+            if (Config.SmartHide) CrosshairCanvas.Visibility = Visibility.Visible;
+        };
+        
         MouseHook.Start();
     }
 
@@ -80,7 +90,10 @@ public partial class OverlayWindow : Window
 
         DrawLine(centerX - g - l, centerY, centerX - g, centerY, t, brush, Config.Outline, outlineBrush);
         DrawLine(centerX + g, centerY, centerX + g + l, centerY, t, brush, Config.Outline, outlineBrush);
-        DrawLine(centerX, centerY - g - l, centerX, centerY - g, t, brush, Config.Outline, outlineBrush);
+        if (!Config.TShape)
+        {
+            DrawLine(centerX, centerY - g - l, centerX, centerY - g, t, brush, Config.Outline, outlineBrush);
+        }
         DrawLine(centerX, centerY + g, centerX, centerY + g + l, t, brush, Config.Outline, outlineBrush);
     }
 
