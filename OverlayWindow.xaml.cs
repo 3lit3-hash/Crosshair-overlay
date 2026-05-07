@@ -13,9 +13,6 @@ namespace CrosshairOverlay;
 public partial class OverlayWindow : Window
 {
     public CrosshairConfig Config { get; set; }
-    private double _currentSpread = 0;
-    private bool _isShooting = false;
-    private DispatcherTimer _timer;
 
     public OverlayWindow(CrosshairConfig config)
     {
@@ -26,14 +23,6 @@ public partial class OverlayWindow : Window
         Left = 0;
         Top = 0;
 
-        _timer = new DispatcherTimer();
-        _timer.Interval = TimeSpan.FromMilliseconds(16);
-        _timer.Tick += Timer_Tick;
-        _timer.Start();
-
-        MouseHook.OnLeftDown += () => _isShooting = true;
-        MouseHook.OnLeftUp += () => _isShooting = false;
-        
         MouseHook.OnRightDown += () => 
         {
             if (Config.SmartHide) CrosshairCanvas.Visibility = Visibility.Hidden;
@@ -44,22 +33,6 @@ public partial class OverlayWindow : Window
         };
         
         MouseHook.Start();
-    }
-
-    private void Timer_Tick(object? sender, EventArgs e)
-    {
-        if (_isShooting)
-        {
-            _currentSpread += 2.0;
-            if (_currentSpread > 30) _currentSpread = 30;
-        }
-        else
-        {
-            _currentSpread -= 2.0;
-            if (_currentSpread < 0) _currentSpread = 0;
-        }
-
-        RedrawCrosshair();
     }
 
     private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -87,7 +60,7 @@ public partial class OverlayWindow : Window
 
         var t = Config.Thickness;
         var l = Config.Length;
-        var g = Config.Gap + _currentSpread;
+        var g = Config.Gap;
 
         DrawLine(centerX - g - l, centerY, centerX - g, centerY, t, brush, Config.Outline, outlineBrush);
         DrawLine(centerX + g, centerY, centerX + g + l, centerY, t, brush, Config.Outline, outlineBrush);

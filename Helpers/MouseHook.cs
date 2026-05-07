@@ -7,8 +7,6 @@ namespace CrosshairOverlay.Helpers;
 public static class MouseHook
 {
     private const int WH_MOUSE_LL = 14;
-    private const int WM_LBUTTONDOWN = 0x0201;
-    private const int WM_LBUTTONUP = 0x0202;
     private const int WM_RBUTTONDOWN = 0x0204;
     private const int WM_RBUTTONUP = 0x0205;
 
@@ -30,8 +28,6 @@ public static class MouseHook
     private static LowLevelMouseProc _proc = HookCallback;
     private static IntPtr _hookID = IntPtr.Zero;
 
-    public static event Action? OnLeftDown;
-    public static event Action? OnLeftUp;
     public static event Action? OnRightDown;
     public static event Action? OnRightUp;
 
@@ -59,11 +55,7 @@ public static class MouseHook
     {
         if (nCode >= 0)
         {
-            if (wParam == (IntPtr)WM_LBUTTONDOWN)
-                OnLeftDown?.Invoke();
-            else if (wParam == (IntPtr)WM_LBUTTONUP)
-                OnLeftUp?.Invoke();
-            else if (wParam == (IntPtr)WM_RBUTTONDOWN)
+            if (wParam == (IntPtr)WM_RBUTTONDOWN)
                 OnRightDown?.Invoke();
             else if (wParam == (IntPtr)WM_RBUTTONUP)
                 OnRightUp?.Invoke();
