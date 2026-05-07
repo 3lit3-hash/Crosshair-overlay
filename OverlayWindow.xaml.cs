@@ -83,11 +83,11 @@ public partial class OverlayWindow : Window
         }
         else if (Config.ShapeType == 2)
         {
-            DrawCircle(centerX, centerY, g + (l / 2), t, brush, Config.Outline, outlineBrush);
+            DrawCircle(centerX, centerY, l, t, brush, Config.Outline, outlineBrush);
         }
         else if (Config.ShapeType == 3)
         {
-            DrawTriangle(centerX, centerY, g + (l / 2), t, brush, Config.Outline, outlineBrush);
+            DrawTriangle(centerX, centerY, l, t, brush, Config.Outline, outlineBrush);
         }
     }
 
