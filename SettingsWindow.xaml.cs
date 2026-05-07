@@ -33,6 +33,8 @@ public partial class SettingsWindow : Window
         PopulateProfiles();
         _loading = false;
         UpdateOverlay();
+        
+        Application.Current.SessionEnding += (s, ev) => ProfileManager.Save(_appState);
     }
 
     public AppState GetAppState() => _appState;
@@ -64,6 +66,7 @@ public partial class SettingsWindow : Window
         menu.Items.Add("Exit", null, (s, a) => { 
             _forceExit = true;
             _notifyIcon.Visible = false; 
+            _notifyIcon.ContextMenuStrip?.Dispose();
             _notifyIcon.Dispose();
             this.Close(); 
         });
@@ -75,6 +78,7 @@ public partial class SettingsWindow : Window
         if (WindowState == WindowState.Minimized)
         {
             this.Hide();
+            ProfileManager.Save(_appState);
         }
         base.OnStateChanged(e);
     }

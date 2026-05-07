@@ -64,11 +64,16 @@ public partial class OverlayWindow : Window
         Win32Api.GetWindowThreadProcessId(hwnd, out uint pid);
         if (pid == 0) return;
 
+        string activeName = "";
         try
         {
             var proc = System.Diagnostics.Process.GetProcessById((int)pid);
-            var activeName = proc.ProcessName.ToLower();
+            activeName = proc.ProcessName.ToLower();
+        }
+        catch { }
 
+        try
+        {
             bool foundGameProfile = false;
             foreach (var kvp in _settings.GetAppState().Profiles)
             {
