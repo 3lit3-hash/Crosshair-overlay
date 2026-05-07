@@ -5,5 +5,5 @@
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
         Topmost="True" ShowInTaskbar="False"
         Loaded="Window_Loaded">
-    <Canvas x:Name="CrosshairCanvas" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+    <Canvas x:Name="CrosshairCanvas" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
 </Window>

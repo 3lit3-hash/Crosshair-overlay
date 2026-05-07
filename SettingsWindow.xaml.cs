@@ -31,7 +31,7 @@ public partial class SettingsWindow : Window
         OutlineCheck.IsChecked = _config.Outline;
         TShapeCheck.IsChecked = _config.TShape;
         SmartHideCheck.IsChecked = _config.SmartHide;
-        ColorBox.Text = $"{_config.Color.R}, {_config.Color.G}, {_config.Color.B}";
+        ColorPickerControl.SelectedColor = _config.Color;
     }
 
     private void UpdateOverlay()
@@ -46,13 +46,9 @@ public partial class SettingsWindow : Window
         _config.TShape = TShapeCheck.IsChecked ?? false;
         _config.SmartHide = SmartHideCheck.IsChecked ?? false;
         
-        var colorParts = ColorBox.Text.Split(',');
-        if (colorParts.Length == 3 && 
-            byte.TryParse(colorParts[0].Trim(), out byte r) && 
-            byte.TryParse(colorParts[1].Trim(), out byte g) && 
-            byte.TryParse(colorParts[2].Trim(), out byte b))
+        if (ColorPickerControl.SelectedColor.HasValue)
         {
-            _config.Color = Color.FromRgb(r, g, b);
+            _config.Color = ColorPickerControl.SelectedColor.Value;
         }
 
         _overlay.RedrawCrosshair();
@@ -62,7 +58,7 @@ public partial class SettingsWindow : Window
 
     private void Slider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e) => UpdateOverlay();
     private void Check_Changed(object sender, RoutedEventArgs e) => UpdateOverlay();
-    private void ColorBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e) => UpdateOverlay();
+    private void ColorPicker_SelectedColorChanged(object sender, RoutedPropertyChangedEventArgs<Color?> e) => UpdateOverlay();
 
     private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
     {
