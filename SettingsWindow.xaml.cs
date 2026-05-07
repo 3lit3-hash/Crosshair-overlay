@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Input;
@@ -11,19 +12,96 @@ namespace CrosshairOverlay;
 public partial class SettingsWindow : Window
 {
     private OverlayWindow _overlay;
-    private CrosshairConfig _config;
+    private AppState _appState;
+    public CrosshairConfig _config;
     private bool _loading = true;
     private bool _isBinding = false;
+
+    private System.Windows.Forms.NotifyIcon _notifyIcon;
+    private bool _forceExit = false;
 
     public SettingsWindow()
     {
         InitializeComponent();
-        _config = ProfileManager.Load();
-        _overlay = new OverlayWindow(_config);
+        SetupTrayIcon();
+        
+        _appState = ProfileManager.Load();
+        _config = _appState.Profiles[_appState.ActiveProfile];
+        _overlay = new OverlayWindow(this);
         _overlay.Show();
-        LoadUI();
+        
+        PopulateProfiles();
         _loading = false;
         UpdateOverlay();
+    }
+
+    public AppState GetAppState() => _appState;
+
+    private void SetupTrayIcon()
+    {
+        _notifyIcon = new System.Windows.Forms.NotifyIcon();
+        try {
+            _notifyIcon.Icon = System.Drawing.Icon.ExtractAssociatedIcon(System.Reflection.Assembly.GetExecutingAssembly().Location);
+        } catch {
+            _notifyIcon.Icon = System.Drawing.SystemIcons.Application;
+        }
+        _notifyIcon.Visible = true;
+        _notifyIcon.Text = "Crosshair Overlay";
+
+        _notifyIcon.DoubleClick += (s, args) => 
+        {
+            this.Show();
+            this.WindowState = WindowState.Normal;
+            this.Activate();
+        };
+
+        var menu = new System.Windows.Forms.ContextMenuStrip();
+        menu.Items.Add("Open Settings", null, (s, a) => { 
+            this.Show(); 
+            this.WindowState = WindowState.Normal; 
+            this.Activate(); 
+        });
+        menu.Items.Add("Exit", null, (s, a) => { 
+            _forceExit = true;
+            _notifyIcon.Visible = false; 
+            _notifyIcon.Dispose();
+            this.Close(); 
+        });
+        _notifyIcon.ContextMenuStrip = menu;
+    }
+
+    protected override void OnStateChanged(EventArgs e)
+    {
+        if (WindowState == WindowState.Minimized)
+        {
+            this.Hide();
+        }
+        base.OnStateChanged(e);
+    }
+
+    private void PopulateProfiles()
+    {
+        _loading = true;
+        ProfileCombo.Items.Clear();
+        foreach (var key in _appState.Profiles.Keys) ProfileCombo.Items.Add(key);
+        ProfileCombo.SelectedItem = _appState.ActiveProfile;
+        _loading = false;
+        LoadUI();
+    }
+
+    public void SwitchToProfile(string profileName)
+    {
+        if (_appState.Profiles.TryGetValue(profileName, out var newConf))
+        {
+            _loading = true;
+            _appState.ActiveProfile = profileName;
+            _config = newConf;
+            _overlay.Config = _config;
+            ProfileCombo.SelectedItem = profileName;
+            LoadUI();
+            _loading = false;
+            UpdateOverlay();
+        }
     }
 
     private void LoadUI()
@@ -121,6 +199,34 @@ public partial class SettingsWindow : Window
 
     private void TextInput_Changed(object sender, System.Windows.Controls.TextChangedEventArgs e) => UpdateOverlay();
 
+    private void ProfileCombo_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    {
+        if (_loading || ProfileCombo.SelectedItem == null) return;
+        SwitchToProfile(ProfileCombo.SelectedItem.ToString() ?? "Default");
+    }
+
+    private void NewProfileBtn_Click(object sender, RoutedEventArgs e)
+    {
+        string name = NewProfileNameInput.Text.Trim();
+        if (string.IsNullOrEmpty(name) || _appState.Profiles.ContainsKey(name)) return;
+        
+        var cloneJson = JsonSerializer.Serialize(_config);
+        var cloned = JsonSerializer.Deserialize<CrosshairConfig>(cloneJson) ?? new CrosshairConfig();
+        
+        _appState.Profiles[name] = cloned;
+        PopulateProfiles();
+        SwitchToProfile(name);
+    }
+
+    private void DelProfileBtn_Click(object sender, RoutedEventArgs e)
+    {
+        if (_appState.Profiles.Count <= 1) return;
+        _appState.Profiles.Remove(_appState.ActiveProfile);
+        _appState.ActiveProfile = _appState.Profiles.Keys.First();
+        PopulateProfiles();
+        SwitchToProfile(_appState.ActiveProfile);
+    }
+
     private void BindButton_Click(object sender, RoutedEventArgs e)
     {
         _isBinding = true;
@@ -197,6 +303,7 @@ public partial class SettingsWindow : Window
                 if (imported != null)
                 {
                     _config = imported;
+                    _appState.Profiles[_appState.ActiveProfile] = _config;
                     _overlay.Config = _config;
                     _loading = true;
                     LoadUI();
@@ -211,7 +318,15 @@ public partial class SettingsWindow : Window
 
     private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
     {
-        ProfileManager.Save(_config);
-        _overlay.Close();
+        if (!_forceExit)
+        {
+            e.Cancel = true;
+            this.Hide();
+        }
+        else
+        {
+            ProfileManager.Save(_appState);
+            _overlay.Close();
+        }
     }
 }

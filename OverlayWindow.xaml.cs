@@ -13,14 +13,18 @@ namespace CrosshairOverlay;
 public partial class OverlayWindow : Window
 {
     public CrosshairConfig Config { get; set; }
+    private SettingsWindow _settings;
+    
     private bool _isSmartHidden = false;
     private bool _isHiddenByProcess = false;
     private DispatcherTimer _processTimer;
 
-    public OverlayWindow(CrosshairConfig config)
+    public OverlayWindow(SettingsWindow settings)
     {
         InitializeComponent();
-        Config = config;
+        _settings = settings;
+        Config = _settings._config;
+
         Width = SystemParameters.PrimaryScreenWidth;
         Height = SystemParameters.PrimaryScreenHeight;
         Left = 0;
@@ -65,9 +69,28 @@ public partial class OverlayWindow : Window
             var proc = System.Diagnostics.Process.GetProcessById((int)pid);
             var activeName = proc.ProcessName.ToLower();
 
-            var targets = Config.TargetProcesses.ToLower().Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+            bool foundGameProfile = false;
+            foreach (var kvp in _settings.GetAppState().Profiles)
+            {
+                var pt = kvp.Value.TargetProcesses.ToLower().Split(new[] { ',' }, System.StringSplitOptions.RemoveEmptyEntries);
+                foreach (var tg in pt)
+                {
+                    if (activeName.Contains(tg.Trim()))
+                    {
+                        if (_settings.GetAppState().ActiveProfile != kvp.Key)
+                        {
+                            _settings.Dispatcher.Invoke(() => _settings.SwitchToProfile(kvp.Key));
+                        }
+                        foundGameProfile = true;
+                        break;
+                    }
+                }
+                if (foundGameProfile) break;
+            }
+
+            var activeTargets = Config.TargetProcesses.ToLower().Split(new[] { ',' }, System.StringSplitOptions.RemoveEmptyEntries);
             bool match = false;
-            foreach (var t in targets)
+            foreach (var t in activeTargets)
             {
                 if (activeName.Contains(t.Trim()))
                 {
