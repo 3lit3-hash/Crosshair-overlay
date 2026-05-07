@@ -54,16 +54,6 @@ public partial class OverlayWindow : Window
 
     private void ProcessTimer_Tick(object? sender, EventArgs e)
     {
-        if (!Config.AutoHide)
-        {
-            if (_isHiddenByProcess)
-            {
-                _isHiddenByProcess = false;
-                UpdateVisibility();
-            }
-            return;
-        }
-
         IntPtr hwnd = Win32Api.GetForegroundWindow();
         if (hwnd == IntPtr.Zero) return;
 
@@ -86,9 +76,46 @@ public partial class OverlayWindow : Window
                 }
             }
 
-            if (_isHiddenByProcess == match)
+            if (match)
             {
-                _isHiddenByProcess = !match;
+                if (Win32Api.GetWindowRect(hwnd, out Win32Api.RECT r))
+                {
+                    if (this.Left != r.Left) this.Left = r.Left;
+                    if (this.Top != r.Top) this.Top = r.Top;
+                    if (this.Width != r.Width || this.Height != r.Height)
+                    {
+                        this.Width = r.Width;
+                        this.Height = r.Height;
+                        RedrawCrosshair();
+                    }
+                }
+            }
+            else
+            {
+                if (!Config.AutoHide)
+                {
+                    if (this.Left != 0) this.Left = 0;
+                    if (this.Top != 0) this.Top = 0;
+                    if (this.Width != SystemParameters.PrimaryScreenWidth || this.Height != SystemParameters.PrimaryScreenHeight)
+                    {
+                        this.Width = SystemParameters.PrimaryScreenWidth;
+                        this.Height = SystemParameters.PrimaryScreenHeight;
+                        RedrawCrosshair();
+                    }
+                }
+            }
+
+            if (Config.AutoHide)
+            {
+                if (_isHiddenByProcess == match)
+                {
+                    _isHiddenByProcess = !match;
+                    UpdateVisibility();
+                }
+            }
+            else if (_isHiddenByProcess)
+            {
+                _isHiddenByProcess = false;
                 UpdateVisibility();
             }
         }

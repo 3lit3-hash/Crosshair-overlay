@@ -19,4 +19,15 @@ public static class Win32Api
 
     [DllImport("user32.dll", SetLastError = true)]
     public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
+
+    [StructLayout(LayoutMode.Sequential)]
+    public struct RECT
+    {
+        public int Left, Top, Right, Bottom;
+        public int Width => Right - Left;
+        public int Height => Bottom - Top;
+    }
+
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern bool GetWindowRect(IntPtr hwnd, out RECT lpRect);
 }

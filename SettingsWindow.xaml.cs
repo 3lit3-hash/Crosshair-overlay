@@ -172,11 +172,13 @@ public partial class SettingsWindow : Window
     {
         try
         {
-            var json = JsonSerializer.Serialize(_config);
+            var exportConfig = JsonSerializer.Deserialize<CrosshairConfig>(JsonSerializer.Serialize(_config));
+            if (exportConfig != null) exportConfig.CustomImagePath = "";
+            var json = JsonSerializer.Serialize(exportConfig);
             var bytes = System.Text.Encoding.UTF8.GetBytes(json);
             var b64 = Convert.ToBase64String(bytes);
             Clipboard.SetText("CHX-" + b64);
-            MessageBox.Show("Profile code copied to clipboard!", "Export Success", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show("Profile code copied to clipboard!\n(Note: Custom images cannot be dynamically shared).", "Export Success", MessageBoxButton.OK, MessageBoxImage.Information);
         }
         catch { }
     }
