@@ -71,13 +71,57 @@ public partial class OverlayWindow : Window
         var l = Config.Length;
         var g = Config.Gap;
 
-        DrawLine(centerX - g - l, centerY, centerX - g, centerY, t, brush, Config.Outline, outlineBrush);
-        DrawLine(centerX + g, centerY, centerX + g + l, centerY, t, brush, Config.Outline, outlineBrush);
-        if (!Config.TShape)
+        if (Config.ShapeType == 0)
         {
-            DrawLine(centerX, centerY - g - l, centerX, centerY - g, t, brush, Config.Outline, outlineBrush);
+            DrawLine(centerX - g - l, centerY, centerX - g, centerY, t, brush, Config.Outline, outlineBrush);
+            DrawLine(centerX + g, centerY, centerX + g + l, centerY, t, brush, Config.Outline, outlineBrush);
+            if (!Config.TShape)
+            {
+                DrawLine(centerX, centerY - g - l, centerX, centerY - g, t, brush, Config.Outline, outlineBrush);
+            }
+            DrawLine(centerX, centerY + g, centerX, centerY + g + l, t, brush, Config.Outline, outlineBrush);
         }
-        DrawLine(centerX, centerY + g, centerX, centerY + g + l, t, brush, Config.Outline, outlineBrush);
+        else if (Config.ShapeType == 2)
+        {
+            DrawCircle(centerX, centerY, g + (l / 2), t, brush, Config.Outline, outlineBrush);
+        }
+        else if (Config.ShapeType == 3)
+        {
+            DrawTriangle(centerX, centerY, g + (l / 2), t, brush, Config.Outline, outlineBrush);
+        }
+    }
+
+    private void DrawCircle(double x, double y, double radius, double thickness, Brush brush, bool outl, Brush ob)
+    {
+        if (outl)
+        {
+            var outline = new Ellipse { Width = radius * 2, Height = radius * 2, Stroke = ob, StrokeThickness = thickness + 2 };
+            Canvas.SetLeft(outline, x - radius);
+            Canvas.SetTop(outline, y - radius);
+            CrosshairCanvas.Children.Add(outline);
+        }
+        var ellipse = new Ellipse { Width = radius * 2, Height = radius * 2, Stroke = brush, StrokeThickness = thickness };
+        Canvas.SetLeft(ellipse, x - radius);
+        Canvas.SetTop(ellipse, y - radius);
+        CrosshairCanvas.Children.Add(ellipse);
+    }
+
+    private void DrawTriangle(double cx, double cy, double size, double thickness, Brush brush, bool outl, Brush ob)
+    {
+        var points = new PointCollection
+        {
+            new Point(cx, cy - size),
+            new Point(cx - size, cy + size),
+            new Point(cx + size, cy + size)
+        };
+
+        if (outl)
+        {
+            var outline = new Polygon { Points = points, Stroke = ob, StrokeThickness = thickness + 2, Fill = Brushes.Transparent, StrokeLineJoin = PenLineJoin.Round };
+            CrosshairCanvas.Children.Add(outline);
+        }
+        var triangle = new Polygon { Points = points, Stroke = brush, StrokeThickness = thickness, Fill = Brushes.Transparent, StrokeLineJoin = PenLineJoin.Round };
+        CrosshairCanvas.Children.Add(triangle);
     }
 
     private void DrawLine(double x1, double y1, double x2, double y2, double thickness, Brush brush, bool outl, Brush ob)

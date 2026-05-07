@@ -15,4 +15,5 @@ public class CrosshairConfig
     public bool TShape { get; set; } = false;
     public bool SmartHide { get; set; } = false;
     public string SmartHideBind { get; set; } = "RightButton";
+    public int ShapeType { get; set; } = 0;
 }

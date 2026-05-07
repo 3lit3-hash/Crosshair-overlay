@@ -35,6 +35,7 @@ public partial class SettingsWindow : Window
         SmartHideCheck.IsChecked = _config.SmartHide;
         ColorPickerControl.SelectedColor = _config.Color;
         BindButton.Content = _config.SmartHideBind;
+        ShapeCombo.SelectedIndex = _config.ShapeType >= 0 && _config.ShapeType <= 3 ? _config.ShapeType : 0;
     }
 
     private void UpdateOverlay()
@@ -49,6 +50,7 @@ public partial class SettingsWindow : Window
         _config.TShape = TShapeCheck.IsChecked ?? false;
         _config.SmartHide = SmartHideCheck.IsChecked ?? false;
         _config.SmartHideBind = BindButton.Content.ToString() ?? "RightButton";
+        _config.ShapeType = ShapeCombo?.SelectedIndex ?? 0;
         
         if (ColorPickerControl.SelectedColor.HasValue)
         {
@@ -62,6 +64,7 @@ public partial class SettingsWindow : Window
 
     private void Slider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e) => UpdateOverlay();
     private void Check_Changed(object sender, RoutedEventArgs e) => UpdateOverlay();
+    private void Combo_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e) => UpdateOverlay();
     private void ColorPicker_SelectedColorChanged(object sender, RoutedPropertyChangedEventArgs<Color?> e) => UpdateOverlay();
 
     private void BindButton_Click(object sender, RoutedEventArgs e)
