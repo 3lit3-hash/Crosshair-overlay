@@ -108,6 +108,15 @@ public partial class SettingsWindow : Window
         }
     }
 
+    public void SwitchToNextProfile()
+    {
+        var keys = _appState.Profiles.Keys.ToList();
+        if (keys.Count <= 1) return;
+        int idx = keys.IndexOf(_appState.ActiveProfile);
+        idx = (idx + 1) % keys.Count;
+        SwitchToProfile(keys[idx]);
+    }
+
     private void LoadUI()
     {
         GapSlider.Value = _config.Gap;
@@ -115,14 +124,23 @@ public partial class SettingsWindow : Window
         ThicknessSlider.Value = _config.Thickness;
         DotSizeSlider.Value = _config.DotSize;
         OpacitySlider.Value = _config.Opacity;
+        OffsetXSlider.Value = _config.OffsetX;
+        OffsetYSlider.Value = _config.OffsetY;
+        
         CenterDotCheck.IsChecked = _config.ShowCenterDot;
         OutlineCheck.IsChecked = _config.Outline;
         TShapeCheck.IsChecked = _config.TShape;
         SmartHideCheck.IsChecked = _config.SmartHide;
         AutoHideCheck.IsChecked = _config.AutoHide;
+        InvertColorsCheck.IsChecked = _config.InvertColors;
+
         TargetProcInput.Text = _config.TargetProcesses;
         ColorPickerControl.SelectedColor = _config.Color;
+        
         BindButton.Content = _config.SmartHideBind;
+        PanicBindButton.Content = _config.PanicKeyBind;
+        SwapBindButton.Content = _config.SwapProfileBind;
+
         ShapeCombo.SelectedIndex = _config.ShapeType >= 0 && _config.ShapeType <= 4 ? _config.ShapeType : 0;
         
         UpdateVisibility();
@@ -172,6 +190,8 @@ public partial class SettingsWindow : Window
         _config.Thickness = ThicknessSlider.Value;
         _config.DotSize = DotSizeSlider.Value;
         _config.Opacity = OpacitySlider.Value;
+        _config.OffsetX = OffsetXSlider.Value;
+        _config.OffsetY = OffsetYSlider.Value;
         
         bool isDotOnly = ShapeCombo.SelectedIndex == 1;
         _config.ShowCenterDot = isDotOnly ? true : (CenterDotCheck.IsChecked ?? false);
@@ -180,8 +200,13 @@ public partial class SettingsWindow : Window
         _config.TShape = TShapeCheck.IsChecked ?? false;
         _config.SmartHide = SmartHideCheck.IsChecked ?? false;
         _config.AutoHide = AutoHideCheck.IsChecked ?? false;
+        _config.InvertColors = InvertColorsCheck.IsChecked ?? false;
         _config.TargetProcesses = TargetProcInput.Text;
+        
         _config.SmartHideBind = BindButton.Content.ToString() ?? "RightButton";
+        _config.PanicKeyBind = PanicBindButton.Content.ToString() ?? "F8";
+        _config.SwapProfileBind = SwapBindButton.Content.ToString() ?? "F9";
+        
         _config.ShapeType = ShapeCombo?.SelectedIndex ?? 0;
         
         if (ColorPickerControl.SelectedColor.HasValue)
@@ -236,6 +261,18 @@ public partial class SettingsWindow : Window
         _isBinding = true;
         BindButton.Content = "Press any key...";
     }
+    
+    private void PanicBindButton_Click(object sender, RoutedEventArgs e)
+    {
+        _isBinding = true;
+        PanicBindButton.Content = "Press any key...";
+    }
+
+    private void SwapBindButton_Click(object sender, RoutedEventArgs e)
+    {
+        _isBinding = true;
+        SwapBindButton.Content = "Press any key...";
+    }
 
     private void BrowseImage_Click(object sender, RoutedEventArgs e)
     {
@@ -253,7 +290,11 @@ public partial class SettingsWindow : Window
         {
             e.Handled = true;
             _isBinding = false;
-            BindButton.Content = e.Key.ToString();
+            
+            if (BindButton.Content.ToString() == "Press any key...") BindButton.Content = e.Key.ToString();
+            else if (PanicBindButton.Content.ToString() == "Press any key...") PanicBindButton.Content = e.Key.ToString();
+            else if (SwapBindButton.Content.ToString() == "Press any key...") SwapBindButton.Content = e.Key.ToString();
+            
             UpdateOverlay();
         }
         base.OnPreviewKeyDown(e);
@@ -261,18 +302,16 @@ public partial class SettingsWindow : Window
 
     protected override void OnPreviewMouseDown(MouseButtonEventArgs e)
     {
-        if (_isBinding && !ReferenceEquals(e.Source, BindButton))
+        if (_isBinding)
         {
             e.Handled = true;
             _isBinding = false;
-            BindButton.Content = e.ChangedButton.ToString() + "Button";
-            UpdateOverlay();
-        }
-        else if (_isBinding && ReferenceEquals(e.Source, BindButton) && e.ChangedButton != MouseButton.Left)
-        {
-            e.Handled = true;
-            _isBinding = false;
-            BindButton.Content = e.ChangedButton.ToString() + "Button";
+            var val = e.ChangedButton.ToString() + "Button";
+            
+            if (BindButton.Content.ToString() == "Press any key...") BindButton.Content = val;
+            else if (PanicBindButton.Content.ToString() == "Press any key...") PanicBindButton.Content = val;
+            else if (SwapBindButton.Content.ToString() == "Press any key...") SwapBindButton.Content = val;
+            
             UpdateOverlay();
         }
         base.OnPreviewMouseDown(e);

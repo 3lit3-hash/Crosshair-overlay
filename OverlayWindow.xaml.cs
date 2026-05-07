@@ -5,6 +5,7 @@ using System.Windows.Media;
 using System.Windows.Shapes;
 using System.Windows.Threading;
 using System.Windows.Controls;
+using System.Runtime.InteropServices;
 using CrosshairOverlay.Helpers;
 using CrosshairOverlay.Models;
 
@@ -12,12 +13,23 @@ namespace CrosshairOverlay;
 
 public partial class OverlayWindow : Window
 {
+    [DllImport("user32.dll")]
+    public static extern IntPtr GetDC(IntPtr hwnd);
+
+    [DllImport("user32.dll")]
+    public static extern int ReleaseDC(IntPtr hwnd, IntPtr hdc);
+
+    [DllImport("gdi32.dll")]
+    public static extern uint GetPixel(IntPtr hdc, int nXPos, int nYPos);
+
     public CrosshairConfig Config { get; set; }
     private SettingsWindow _settings;
     
     private bool _isSmartHidden = false;
     private bool _isHiddenByProcess = false;
+    private bool _isPanicHidden = false;
     private DispatcherTimer _processTimer;
+    private DispatcherTimer _invertTimer;
 
     public OverlayWindow(SettingsWindow settings)
     {
@@ -41,6 +53,17 @@ public partial class OverlayWindow : Window
         KeyboardHook.OnKeyDownAction += (key) => 
         {
             if (Config.SmartHide && key == Config.SmartHideBind) { _isSmartHidden = true; UpdateVisibility(); }
+            
+            if (key == Config.PanicKeyBind) 
+            {
+                _isPanicHidden = !_isPanicHidden;
+                UpdateVisibility();
+            }
+
+            if (key == Config.SwapProfileBind)
+            {
+                _settings.Dispatcher.Invoke(() => _settings.SwitchToNextProfile());
+            }
         };
         KeyboardHook.OnKeyUpAction += (key) => 
         {
@@ -54,6 +77,11 @@ public partial class OverlayWindow : Window
         _processTimer.Interval = TimeSpan.FromMilliseconds(500);
         _processTimer.Tick += ProcessTimer_Tick;
         _processTimer.Start();
+
+        _invertTimer = new DispatcherTimer();
+        _invertTimer.Interval = TimeSpan.FromMilliseconds(50);
+        _invertTimer.Tick += InvertTimer_Tick;
+        _invertTimer.Start();
     }
 
     private void ProcessTimer_Tick(object? sender, EventArgs e)
@@ -150,9 +178,32 @@ public partial class OverlayWindow : Window
         catch { }
     }
 
+    private void InvertTimer_Tick(object? sender, EventArgs e)
+    {
+        if (!Config.InvertColors || CrosshairCanvas.Visibility != Visibility.Visible) return;
+        
+        var centerX = (this.Width / 2) + Config.OffsetX;
+        var centerY = (this.Height / 2) + Config.OffsetY;
+
+        IntPtr hdc = GetDC(IntPtr.Zero);
+        uint pixel = GetPixel(hdc, (int)(this.Left + centerX), (int)(this.Top + centerY));
+        ReleaseDC(IntPtr.Zero, hdc);
+
+        byte r = (byte)(pixel & 0x000000FF);
+        byte g = (byte)((pixel & 0x0000FF00) >> 8);
+        byte b = (byte)((pixel & 0x00FF0000) >> 16);
+
+        var inverted = Color.FromRgb((byte)(255 - r), (byte)(255 - g), (byte)(255 - b));
+        
+        foreach (var child in CrosshairCanvas.Children) {
+            if (child is Shape s && s.Stroke != null) s.Stroke = new SolidColorBrush(inverted) { Opacity = Config.Opacity };
+            if (child is Shape s2 && s2.Fill != null && s2.Fill != Brushes.Transparent) s2.Fill = new SolidColorBrush(inverted) { Opacity = Config.Opacity };
+        }
+    }
+
     private void UpdateVisibility()
     {
-        if (_isHiddenByProcess || _isSmartHidden)
+        if (_isHiddenByProcess || _isSmartHidden || _isPanicHidden)
             CrosshairCanvas.Visibility = Visibility.Hidden;
         else
             CrosshairCanvas.Visibility = Visibility.Visible;
@@ -173,8 +224,8 @@ public partial class OverlayWindow : Window
         var brush = new SolidColorBrush(Config.Color) { Opacity = Config.Opacity };
         var outlineBrush = new SolidColorBrush(Colors.Black) { Opacity = Config.Opacity };
 
-        var centerX = Width / 2;
-        var centerY = Height / 2;
+        var centerX = (Width / 2) + Config.OffsetX;
+        var centerY = (Height / 2) + Config.OffsetY;
 
         if (Config.ShowCenterDot && Config.ShapeType != 4)
         {
@@ -282,6 +333,7 @@ public partial class OverlayWindow : Window
         MouseHook.Stop();
         KeyboardHook.Stop();
         if (_processTimer != null) _processTimer.Stop();
+        if (_invertTimer != null) _invertTimer.Stop();
         base.OnClosed(e);
     }
 }

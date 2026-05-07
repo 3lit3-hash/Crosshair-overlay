@@ -92,6 +92,24 @@
             <TextBlock x:Name="TargetProcText" Text="Game Processes (comma separated)"/>
             <TextBox x:Name="TargetProcInput" TextChanged="TextInput_Changed"/>
 
+            <TextBlock Text="Offset X"/>
+            <Slider x:Name="OffsetXSlider" Minimum="-500" Maximum="500" ValueChanged="Slider_ValueChanged"/>
+            
+            <TextBlock Text="Offset Y"/>
+            <Slider x:Name="OffsetYSlider" Minimum="-500" Maximum="500" ValueChanged="Slider_ValueChanged"/>
+
+            <CheckBox x:Name="InvertColorsCheck" Content="Invert Color dynamically (Contrast Mode)" Checked="Check_Changed" Unchecked="Check_Changed" Foreground="{StaticResource AccentColor}"/>
+
+            <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                <TextBlock Text="Panic Key: " VerticalAlignment="Center" Margin="0,0,10,0" Width="100"/>
+                <Button x:Name="PanicBindButton" Content="F8" Width="100" Height="25" Click="PanicBindButton_Click" Background="{StaticResource ControlBg}"/>
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                <TextBlock Text="Swap Profile Key: " VerticalAlignment="Center" Margin="0,0,10,0" Width="100"/>
+                <Button x:Name="SwapBindButton" Content="F9" Width="100" Height="25" Click="SwapBindButton_Click" Background="{StaticResource ControlBg}"/>
+            </StackPanel>
+
             <TextBlock Text="Crosshair Color"/>
             <xctk:ColorPicker x:Name="ColorPickerControl" SelectedColorChanged="ColorPicker_SelectedColorChanged" Background="{StaticResource ControlBg}" Foreground="White" BorderThickness="0" Margin="0,5,0,15"/>
 

@@ -19,4 +19,10 @@ public class CrosshairConfig
     public string CustomImagePath { get; set; } = "";
     public string TargetProcesses { get; set; } = "cs2, valorant, r5apex";
     public bool AutoHide { get; set; } = false;
+
+    public double OffsetX { get; set; } = 0;
+    public double OffsetY { get; set; } = 0;
+    public bool InvertColors { get; set; } = false;
+    public string PanicKeyBind { get; set; } = "F8";
+    public string SwapProfileBind { get; set; } = "F9";
 }
