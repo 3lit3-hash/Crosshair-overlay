@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 using CrosshairOverlay.Models;
+using Microsoft.Win32;
 
 namespace CrosshairOverlay;
 
@@ -36,9 +37,11 @@ public partial class SettingsWindow : Window
         OutlineCheck.IsChecked = _config.Outline;
         TShapeCheck.IsChecked = _config.TShape;
         SmartHideCheck.IsChecked = _config.SmartHide;
+        AutoHideCheck.IsChecked = _config.AutoHide;
+        TargetProcInput.Text = _config.TargetProcesses;
         ColorPickerControl.SelectedColor = _config.Color;
         BindButton.Content = _config.SmartHideBind;
-        ShapeCombo.SelectedIndex = _config.ShapeType >= 0 && _config.ShapeType <= 3 ? _config.ShapeType : 0;
+        ShapeCombo.SelectedIndex = _config.ShapeType >= 0 && _config.ShapeType <= 4 ? _config.ShapeType : 0;
         
         UpdateVisibility();
     }
@@ -60,16 +63,23 @@ public partial class SettingsWindow : Window
         if (shape == 0) LengthText.Text = "Length";
         else if (shape == 2) LengthText.Text = "Radius";
         else if (shape == 3) LengthText.Text = "Size";
+        else if (shape == 4) LengthText.Text = "Image Scale";
 
-        ThicknessText.Visibility = showLength ? Visibility.Visible : Visibility.Collapsed;
-        ThicknessSlider.Visibility = showLength ? Visibility.Visible : Visibility.Collapsed;
+        ThicknessText.Visibility = showLength && shape != 4 ? Visibility.Visible : Visibility.Collapsed;
+        ThicknessSlider.Visibility = showLength && shape != 4 ? Visibility.Visible : Visibility.Collapsed;
 
         bool isDotOnly = shape == 1;
-        CenterDotCheck.Visibility = isDotOnly ? Visibility.Collapsed : Visibility.Visible;
+        CenterDotCheck.Visibility = isDotOnly || shape == 4 ? Visibility.Collapsed : Visibility.Visible;
         
-        bool showDotSize = (CenterDotCheck.IsChecked == true) || isDotOnly;
+        bool showDotSize = (CenterDotCheck.IsChecked == true && shape != 4) || isDotOnly;
         DotSizeText.Visibility = showDotSize ? Visibility.Visible : Visibility.Collapsed;
         DotSizeSlider.Visibility = showDotSize ? Visibility.Visible : Visibility.Collapsed;
+
+        BrowseImageBtn.Visibility = shape == 4 ? Visibility.Visible : Visibility.Collapsed;
+        
+        bool autoHide = AutoHideCheck.IsChecked == true;
+        TargetProcText.Visibility = autoHide ? Visibility.Visible : Visibility.Collapsed;
+        TargetProcInput.Visibility = autoHide ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void UpdateOverlay()
@@ -87,6 +97,8 @@ public partial class SettingsWindow : Window
         _config.Outline = OutlineCheck.IsChecked ?? false;
         _config.TShape = TShapeCheck.IsChecked ?? false;
         _config.SmartHide = SmartHideCheck.IsChecked ?? false;
+        _config.AutoHide = AutoHideCheck.IsChecked ?? false;
+        _config.TargetProcesses = TargetProcInput.Text;
         _config.SmartHideBind = BindButton.Content.ToString() ?? "RightButton";
         _config.ShapeType = ShapeCombo?.SelectedIndex ?? 0;
         
@@ -96,10 +108,7 @@ public partial class SettingsWindow : Window
         }
 
         UpdateVisibility();
-
         _overlay.RedrawCrosshair();
-        if (!_config.SmartHide) 
-            _overlay.CrosshairCanvas.Visibility = Visibility.Visible;
     }
 
     private void Slider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e) => UpdateOverlay();
@@ -110,10 +119,22 @@ public partial class SettingsWindow : Window
     
     private void ColorPicker_SelectedColorChanged(object sender, RoutedPropertyChangedEventArgs<Color?> e) => UpdateOverlay();
 
+    private void TextInput_Changed(object sender, System.Windows.Controls.TextChangedEventArgs e) => UpdateOverlay();
+
     private void BindButton_Click(object sender, RoutedEventArgs e)
     {
         _isBinding = true;
         BindButton.Content = "Press any key...";
+    }
+
+    private void BrowseImage_Click(object sender, RoutedEventArgs e)
+    {
+        var fd = new OpenFileDialog { Filter = "Image Files (*.png;*.jpg;*.jpeg)|*.png;*.jpg;*.jpeg|All Files (*.*)|*.*" };
+        if (fd.ShowDialog() == true)
+        {
+            _config.CustomImagePath = fd.FileName;
+            UpdateOverlay();
+        }
     }
 
     protected override void OnPreviewKeyDown(KeyEventArgs e)
@@ -182,15 +203,8 @@ public partial class SettingsWindow : Window
                     MessageBox.Show("Profile successfully imported!", "Import Success", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
             }
-            else
-            {
-                MessageBox.Show("Invalid profile code in clipboard.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
         }
-        catch
-        {
-            MessageBox.Show("Failed to import profile code.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-        }
+        catch { }
     }
 
     private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)

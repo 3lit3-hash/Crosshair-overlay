@@ -16,4 +16,7 @@ public class CrosshairConfig
     public bool SmartHide { get; set; } = false;
     public string SmartHideBind { get; set; } = "RightButton";
     public int ShapeType { get; set; } = 0;
+    public string CustomImagePath { get; set; } = "";
+    public string TargetProcesses { get; set; } = "cs2, valorant, r5apex";
+    public bool AutoHide { get; set; } = false;
 }

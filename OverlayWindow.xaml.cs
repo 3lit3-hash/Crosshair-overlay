@@ -13,6 +13,9 @@ namespace CrosshairOverlay;
 public partial class OverlayWindow : Window
 {
     public CrosshairConfig Config { get; set; }
+    private bool _isSmartHidden = false;
+    private bool _isHiddenByProcess = false;
+    private DispatcherTimer _processTimer;
 
     public OverlayWindow(CrosshairConfig config)
     {
@@ -25,23 +28,79 @@ public partial class OverlayWindow : Window
 
         MouseHook.OnMouseDownAction += (btn) => 
         {
-            if (Config.SmartHide && btn == Config.SmartHideBind) CrosshairCanvas.Visibility = Visibility.Hidden;
+            if (Config.SmartHide && btn == Config.SmartHideBind) { _isSmartHidden = true; UpdateVisibility(); }
         };
         MouseHook.OnMouseUpAction += (btn) => 
         {
-            if (Config.SmartHide && btn == Config.SmartHideBind) CrosshairCanvas.Visibility = Visibility.Visible;
+            if (Config.SmartHide && btn == Config.SmartHideBind) { _isSmartHidden = false; UpdateVisibility(); }
         };
         KeyboardHook.OnKeyDownAction += (key) => 
         {
-            if (Config.SmartHide && key == Config.SmartHideBind) CrosshairCanvas.Visibility = Visibility.Hidden;
+            if (Config.SmartHide && key == Config.SmartHideBind) { _isSmartHidden = true; UpdateVisibility(); }
         };
         KeyboardHook.OnKeyUpAction += (key) => 
         {
-            if (Config.SmartHide && key == Config.SmartHideBind) CrosshairCanvas.Visibility = Visibility.Visible;
+            if (Config.SmartHide && key == Config.SmartHideBind) { _isSmartHidden = false; UpdateVisibility(); }
         };
         
         MouseHook.Start();
         KeyboardHook.Start();
+
+        _processTimer = new DispatcherTimer();
+        _processTimer.Interval = TimeSpan.FromMilliseconds(500);
+        _processTimer.Tick += ProcessTimer_Tick;
+        _processTimer.Start();
+    }
+
+    private void ProcessTimer_Tick(object? sender, EventArgs e)
+    {
+        if (!Config.AutoHide)
+        {
+            if (_isHiddenByProcess)
+            {
+                _isHiddenByProcess = false;
+                UpdateVisibility();
+            }
+            return;
+        }
+
+        IntPtr hwnd = Win32Api.GetForegroundWindow();
+        if (hwnd == IntPtr.Zero) return;
+
+        Win32Api.GetWindowThreadProcessId(hwnd, out uint pid);
+        if (pid == 0) return;
+
+        try
+        {
+            var proc = System.Diagnostics.Process.GetProcessById((int)pid);
+            var activeName = proc.ProcessName.ToLower();
+
+            var targets = Config.TargetProcesses.ToLower().Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+            bool match = false;
+            foreach (var t in targets)
+            {
+                if (activeName.Contains(t.Trim()))
+                {
+                    match = true;
+                    break;
+                }
+            }
+
+            if (_isHiddenByProcess == match)
+            {
+                _isHiddenByProcess = !match;
+                UpdateVisibility();
+            }
+        }
+        catch { }
+    }
+
+    private void UpdateVisibility()
+    {
+        if (_isHiddenByProcess || _isSmartHidden)
+            CrosshairCanvas.Visibility = Visibility.Hidden;
+        else
+            CrosshairCanvas.Visibility = Visibility.Visible;
     }
 
     private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -54,6 +113,7 @@ public partial class OverlayWindow : Window
     public void RedrawCrosshair()
     {
         CrosshairCanvas.Children.Clear();
+        UpdateVisibility();
 
         var brush = new SolidColorBrush(Config.Color) { Opacity = Config.Opacity };
         var outlineBrush = new SolidColorBrush(Colors.Black) { Opacity = Config.Opacity };
@@ -61,7 +121,7 @@ public partial class OverlayWindow : Window
         var centerX = Width / 2;
         var centerY = Height / 2;
 
-        if (Config.ShowCenterDot)
+        if (Config.ShowCenterDot && Config.ShapeType != 4)
         {
             if (Config.Outline) DrawRect(centerX - Config.DotSize / 2 - 1, centerY - Config.DotSize / 2 - 1, Config.DotSize + 2, Config.DotSize + 2, outlineBrush);
             DrawRect(centerX - Config.DotSize / 2, centerY - Config.DotSize / 2, Config.DotSize, Config.DotSize, brush);
@@ -88,6 +148,25 @@ public partial class OverlayWindow : Window
         else if (Config.ShapeType == 3)
         {
             DrawTriangle(centerX, centerY, l, t, brush, Config.Outline, outlineBrush);
+        }
+        else if (Config.ShapeType == 4 && !string.IsNullOrEmpty(Config.CustomImagePath))
+        {
+            try
+            {
+                var bitmap = new System.Windows.Media.Imaging.BitmapImage();
+                bitmap.BeginInit();
+                bitmap.UriSource = new Uri(Config.CustomImagePath, UriKind.Absolute);
+                bitmap.EndInit();
+
+                var x = centerX - (l / 2);
+                var y = centerY - (l / 2);
+
+                var img = new Image { Source = bitmap, Width = l, Height = l, Stretch = Stretch.Uniform, Opacity = Config.Opacity };
+                Canvas.SetLeft(img, x);
+                Canvas.SetTop(img, y);
+                CrosshairCanvas.Children.Add(img);
+            }
+            catch { }
         }
     }
 
@@ -147,6 +226,7 @@ public partial class OverlayWindow : Window
     {
         MouseHook.Stop();
         KeyboardHook.Stop();
+        if (_processTimer != null) _processTimer.Stop();
         base.OnClosed(e);
     }
 }
