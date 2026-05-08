@@ -18,7 +18,7 @@ public partial class SettingsWindow : Window
     private bool _loading = true;
     private bool _isBinding = false;
 
-    private System.Windows.Forms.NotifyIcon _notifyIcon;
+    private System.Windows.Forms.NotifyIcon? _notifyIcon;
     private bool _forceExit = false;
 
     public SettingsWindow()
