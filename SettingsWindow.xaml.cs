@@ -343,7 +343,7 @@ public partial class SettingsWindow : Window
 
     private void BrowseImage_Click(object sender, RoutedEventArgs e)
     {
-        var fd = new OpenFileDialog { Filter = "Image Files (*.png;*.jpg;*.jpeg)|*.png;*.jpg;*.jpeg|All Files (*.*)|*.*" };
+        var fd = new Microsoft.Win32.OpenFileDialog { Filter = "Image Files (*.png;*.jpg;*.jpeg)|*.png;*.jpg;*.jpeg|All Files (*.*)|*.*" };
         if (fd.ShowDialog() == true)
         {
             _config.CustomImagePath = fd.FileName;
@@ -393,8 +393,8 @@ public partial class SettingsWindow : Window
             var json = JsonSerializer.Serialize(exportConfig);
             var bytes = System.Text.Encoding.UTF8.GetBytes(json);
             var b64 = Convert.ToBase64String(bytes);
-            Clipboard.SetText("CHX-" + b64);
-            MessageBox.Show("Profile code copied to clipboard!\n(Note: Custom images cannot be dynamically shared).", "Export Success", MessageBoxButton.OK, MessageBoxImage.Information);
+            System.Windows.Clipboard.SetText("CHX-" + b64);
+            System.Windows.MessageBox.Show("Profile code copied to clipboard!\n(Note: Custom images cannot be dynamically shared).", "Export Success", MessageBoxButton.OK, MessageBoxImage.Information);
         }
         catch { }
     }
@@ -403,7 +403,7 @@ public partial class SettingsWindow : Window
     {
         try
         {
-            var text = Clipboard.GetText();
+            var text = System.Windows.Clipboard.GetText();
             if (text.StartsWith("CHX-"))
             {
                 var b64 = text.Substring(4);
@@ -420,7 +420,7 @@ public partial class SettingsWindow : Window
                     LoadUI();
                     _loading = false;
                     UpdateOverlay();
-                    MessageBox.Show("Profile successfully imported!", "Import Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                    System.Windows.MessageBox.Show("Profile successfully imported!", "Import Success", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
             }
         }
