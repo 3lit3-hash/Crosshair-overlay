@@ -188,6 +188,8 @@ public partial class SettingsWindow : Window
 
         if (_config.PixelGridMatrix == null || _config.PixelGridMatrix.Length < 256) 
             _config.PixelGridMatrix = new string('0', 256);
+        else if (_config.PixelGridMatrix.Length > 256)
+            _config.PixelGridMatrix = _config.PixelGridMatrix.Substring(0, 256);
             
         for(int i = 0; i < 256; i++) {
             if (PixelGrid.Children[i] is Border b) {

@@ -212,12 +212,14 @@ public partial class OverlayWindow : Window
             byte g = (byte)((pixel & 0x0000FF00) >> 8);
             byte b = (byte)((pixel & 0x00FF0000) >> 16);
 
-            var inverted = Color.FromRgb((byte)(255 - r), (byte)(255 - g), (byte)(255 - b));
+            var brush = new SolidColorBrush(Color.FromRgb((byte)(255 - r), (byte)(255 - g), (byte)(255 - b))) { Opacity = Config.Opacity };
             
             foreach (var child in CrosshairCanvas.Children) {
                 if (child is FrameworkElement fe && fe.Tag?.ToString() == "Outline") continue;
-                if (child is Shape s && s.Stroke != null) s.Stroke = new SolidColorBrush(inverted) { Opacity = Config.Opacity };
-                if (child is Shape s2 && s2.Fill != null && s2.Fill != Brushes.Transparent) s2.Fill = new SolidColorBrush(inverted) { Opacity = Config.Opacity };
+                if (child is Shape s) {
+                    if (s.Stroke != null) s.Stroke = brush;
+                    if (s.Fill != null && s.Fill != Brushes.Transparent) s.Fill = brush;
+                }
             }
         }
         else if (Config.RgbChroma)
@@ -225,12 +227,14 @@ public partial class OverlayWindow : Window
             _hue += (float)Config.RgbSpeed;
             if (_hue >= 360) _hue -= 360;
             
-            var rgb = Win32Api.HsvToRgb(_hue, 1.0, 1.0);
+            var brush = new SolidColorBrush(Win32Api.HsvToRgb(_hue, 1.0, 1.0)) { Opacity = Config.Opacity };
             foreach (var child in CrosshairCanvas.Children) 
             {
                 if (child is FrameworkElement fe && fe.Tag?.ToString() == "Outline") continue;
-                if (child is Shape s && s.Stroke != null) s.Stroke = new SolidColorBrush(rgb) { Opacity = Config.Opacity };
-                if (child is Shape s2 && s2.Fill != null && s2.Fill != Brushes.Transparent) s2.Fill = new SolidColorBrush(rgb) { Opacity = Config.Opacity };
+                if (child is Shape s) {
+                    if (s.Stroke != null) s.Stroke = brush;
+                    if (s.Fill != null && s.Fill != Brushes.Transparent) s.Fill = brush;
+                }
             }
         }
     }
