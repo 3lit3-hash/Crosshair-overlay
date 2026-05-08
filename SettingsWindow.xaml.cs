@@ -39,7 +39,7 @@ public partial class SettingsWindow : Window
         _loading = false;
         UpdateOverlay();
         
-        Application.Current.SessionEnding += (s, ev) => ProfileManager.Save(_appState);
+        System.Windows.Application.Current.SessionEnding += (s, ev) => ProfileManager.Save(_appState);
     }
 
     public AppState GetAppState() => _appState;
@@ -103,7 +103,7 @@ public partial class SettingsWindow : Window
         }
     }
 
-    private void PixelGrid_MouseMove(object sender, MouseEventArgs e)
+    private void PixelGrid_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
     {
         if (e.LeftButton == MouseButtonState.Pressed || e.RightButton == MouseButtonState.Pressed)
         {
@@ -292,7 +292,7 @@ public partial class SettingsWindow : Window
     private void Slider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e) => UpdateOverlay();
     private void Check_Changed(object sender, RoutedEventArgs e) => UpdateOverlay();
     private void Combo_SelectionChanged(object sender, SelectionChangedEventArgs e) => UpdateOverlay();
-    private void ColorPicker_SelectedColorChanged(object sender, RoutedPropertyChangedEventArgs<Color?> e) => UpdateOverlay();
+    private void ColorPicker_SelectedColorChanged(object sender, RoutedPropertyChangedEventArgs<System.Windows.Media.Color?> e) => UpdateOverlay();
     private void TextInput_Changed(object sender, TextChangedEventArgs e) => UpdateOverlay();
 
     private void ProfileCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -351,7 +351,7 @@ public partial class SettingsWindow : Window
         }
     }
 
-    protected override void OnPreviewKeyDown(KeyEventArgs e)
+    protected override void OnPreviewKeyDown(System.Windows.Input.KeyEventArgs e)
     {
         if (_isBinding)
         {
