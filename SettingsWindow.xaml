@@ -13,6 +13,42 @@
         <SolidColorBrush x:Key="ControlBg" Color="{StaticResource BgControl}"/>
         <SolidColorBrush x:Key="AccentColor" Color="{StaticResource Accent}"/>
         <SolidColorBrush x:Key="TextColor" Color="{StaticResource TextPrimary}"/>
+        
+        <!-- Dark theme for Extended.Wpf.Toolkit ColorPicker -->
+        <Style TargetType="xctk:ColorPicker">
+            <Setter Property="Background" Value="{StaticResource BgControlBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderSoftBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="HeaderBackground">
+                <Setter.Value>
+                    <SolidColorBrush Color="#1A1A26"/>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="HeaderForeground" Value="{StaticResource TextPrimaryBrush}"/>
+            <Setter Property="DropDownBackground">
+                <Setter.Value>
+                    <SolidColorBrush Color="#1A1A26"/>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="TabBackground">
+                <Setter.Value>
+                    <SolidColorBrush Color="#1A1A26"/>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="TabForeground" Value="{StaticResource TextPrimaryBrush}"/>
+            <Setter Property="Height" Value="28"/>
+            <Setter Property="ButtonStyle">
+                <Setter.Value>
+                    <Style TargetType="ToggleButton">
+                        <Setter Property="Background" Value="{StaticResource BgControlBrush}"/>
+                        <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
+                        <Setter Property="BorderThickness" Value="0"/>
+                        <Setter Property="Padding" Value="4"/>
+                    </Style>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
 
     <Border CornerRadius="14" BorderThickness="1" ClipToBounds="True"
@@ -108,13 +144,11 @@
 
                             <TextBlock Text="Crosshair"/>
                             <xctk:ColorPicker x:Name="ColorPickerControl" SelectedColorChanged="ColorPicker_SelectedColorChanged" 
-                                              Background="{StaticResource BgControlBrush}" Foreground="White" 
-                                              BorderThickness="0" Height="26" Margin="0,2,0,6"/>
+                                              Margin="0,2,0,6"/>
 
                             <TextBlock Text="Outline"/>
                             <xctk:ColorPicker x:Name="OutlineColorPickerControl" SelectedColorChanged="ColorPicker_SelectedColorChanged" 
-                                              Background="{StaticResource BgControlBrush}" Foreground="White" 
-                                              BorderThickness="0" Height="26" Margin="0,2,0,6"/>
+                                              Margin="0,2,0,6"/>
 
                             <CheckBox x:Name="RgbChromaCheck" Content="RGB Chroma (Rainbow)" Checked="Check_Changed" Unchecked="Check_Changed"/>
                             
