@@ -3,6 +3,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Controls;
 using System.Windows.Media;
 using CrosshairOverlay.Models;
 using Microsoft.Win32;
@@ -26,10 +27,14 @@ public partial class SettingsWindow : Window
         SetupTrayIcon();
         
         _appState = ProfileManager.Load();
+        if (!_appState.Profiles.ContainsKey(_appState.ActiveProfile)) 
+            _appState.ActiveProfile = _appState.Profiles.Keys.First();
+
         _config = _appState.Profiles[_appState.ActiveProfile];
         _overlay = new OverlayWindow(this);
         _overlay.Show();
         
+        InitPixelGrid();
         PopulateProfiles();
         _loading = false;
         UpdateOverlay();
@@ -81,6 +86,46 @@ public partial class SettingsWindow : Window
             ProfileManager.Save(_appState);
         }
         base.OnStateChanged(e);
+    }
+
+    private void InitPixelGrid()
+    {
+        for (int i = 0; i < 256; i++)
+        {
+            var b = new Border 
+            { 
+                Background = Brushes.Transparent, 
+                BorderBrush = new SolidColorBrush(Color.FromArgb(10, 255, 255, 255)), 
+                BorderThickness = new Thickness(0.5) 
+            };
+            b.Tag = i;
+            PixelGrid.Children.Add(b);
+        }
+    }
+
+    private void PixelGrid_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (e.LeftButton == MouseButtonState.Pressed || e.RightButton == MouseButtonState.Pressed)
+        {
+            if (e.OriginalSource is Border el && el.Tag != null)
+            {
+                int idx = (int)el.Tag;
+                bool fill = e.LeftButton == MouseButtonState.Pressed;
+                el.Background = fill ? new SolidColorBrush(_config.Color) : Brushes.Transparent;
+                
+                char[] chars = _config.PixelGridMatrix.PadRight(256, '0').ToCharArray();
+                if (idx < chars.Length) chars[idx] = fill ? '1' : '0';
+                _config.PixelGridMatrix = new string(chars);
+                UpdateOverlay();
+            }
+        }
+    }
+    
+    private void ClearGridBtn_Click(object sender, RoutedEventArgs e)
+    {
+        _config.PixelGridMatrix = new string('0', 256);
+        LoadUI();
+        UpdateOverlay();
     }
 
     private void PopulateProfiles()
@@ -136,12 +181,25 @@ public partial class SettingsWindow : Window
 
         TargetProcInput.Text = _config.TargetProcesses;
         ColorPickerControl.SelectedColor = _config.Color;
+        OutlineColorPickerControl.SelectedColor = _config.OutlineColor;
         
+        RgbChromaCheck.IsChecked = _config.RgbChroma;
+        RgbSpeedSlider.Value = _config.RgbSpeed;
+
+        if (_config.PixelGridMatrix == null || _config.PixelGridMatrix.Length < 256) 
+            _config.PixelGridMatrix = new string('0', 256);
+            
+        for(int i = 0; i < 256; i++) {
+            if (PixelGrid.Children[i] is Border b) {
+                b.Background = _config.PixelGridMatrix[i] == '1' ? new SolidColorBrush(_config.Color) : Brushes.Transparent;
+            }
+        }
+
         BindButton.Content = _config.SmartHideBind;
         PanicBindButton.Content = _config.PanicKeyBind;
         SwapBindButton.Content = _config.SwapProfileBind;
 
-        ShapeCombo.SelectedIndex = _config.ShapeType >= 0 && _config.ShapeType <= 4 ? _config.ShapeType : 0;
+        ShapeCombo.SelectedIndex = _config.ShapeType >= 0 && _config.ShapeType <= 5 ? _config.ShapeType : 0;
         
         UpdateVisibility();
     }
@@ -164,22 +222,29 @@ public partial class SettingsWindow : Window
         else if (shape == 2) LengthText.Text = "Radius";
         else if (shape == 3) LengthText.Text = "Size";
         else if (shape == 4) LengthText.Text = "Image Scale";
+        else if (shape == 5) LengthText.Text = "Grid Scale (Size)";
 
-        ThicknessText.Visibility = showLength && shape != 4 ? Visibility.Visible : Visibility.Collapsed;
-        ThicknessSlider.Visibility = showLength && shape != 4 ? Visibility.Visible : Visibility.Collapsed;
+        ThicknessText.Visibility = showLength && shape != 4 && shape != 5 ? Visibility.Visible : Visibility.Collapsed;
+        ThicknessSlider.Visibility = showLength && shape != 4 && shape != 5 ? Visibility.Visible : Visibility.Collapsed;
 
         bool isDotOnly = shape == 1;
-        CenterDotCheck.Visibility = isDotOnly || shape == 4 ? Visibility.Collapsed : Visibility.Visible;
+        CenterDotCheck.Visibility = isDotOnly || shape == 4 || shape == 5 ? Visibility.Collapsed : Visibility.Visible;
         
-        bool showDotSize = (CenterDotCheck.IsChecked == true && shape != 4) || isDotOnly;
+        bool showDotSize = (CenterDotCheck.IsChecked == true && shape != 4 && shape != 5) || isDotOnly;
         DotSizeText.Visibility = showDotSize ? Visibility.Visible : Visibility.Collapsed;
         DotSizeSlider.Visibility = showDotSize ? Visibility.Visible : Visibility.Collapsed;
 
         BrowseImageBtn.Visibility = shape == 4 ? Visibility.Visible : Visibility.Collapsed;
+        PixelGridBorder.Visibility = shape == 5 ? Visibility.Visible : Visibility.Collapsed;
+        ClearGridBtn.Visibility = shape == 5 ? Visibility.Visible : Visibility.Collapsed;
         
         bool autoHide = AutoHideCheck.IsChecked == true;
         TargetProcText.Visibility = autoHide ? Visibility.Visible : Visibility.Collapsed;
         TargetProcInput.Visibility = autoHide ? Visibility.Visible : Visibility.Collapsed;
+        
+        bool isChroma = RgbChromaCheck.IsChecked == true;
+        RgbSpeedText.Visibility = isChroma ? Visibility.Visible : Visibility.Collapsed;
+        RgbSpeedSlider.Visibility = isChroma ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void UpdateOverlay()
@@ -203,6 +268,10 @@ public partial class SettingsWindow : Window
         _config.InvertColors = InvertColorsCheck.IsChecked ?? false;
         _config.TargetProcesses = TargetProcInput.Text;
         
+        _config.RgbChroma = RgbChromaCheck.IsChecked ?? false;
+        _config.RgbSpeed = RgbSpeedSlider.Value;
+        if (OutlineColorPickerControl.SelectedColor.HasValue) _config.OutlineColor = OutlineColorPickerControl.SelectedColor.Value;
+        
         _config.SmartHideBind = BindButton.Content.ToString() ?? "RightButton";
         _config.PanicKeyBind = PanicBindButton.Content.ToString() ?? "F8";
         _config.SwapProfileBind = SwapBindButton.Content.ToString() ?? "F9";
@@ -219,16 +288,12 @@ public partial class SettingsWindow : Window
     }
 
     private void Slider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e) => UpdateOverlay();
-    
     private void Check_Changed(object sender, RoutedEventArgs e) => UpdateOverlay();
-    
-    private void Combo_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e) => UpdateOverlay();
-    
+    private void Combo_SelectionChanged(object sender, SelectionChangedEventArgs e) => UpdateOverlay();
     private void ColorPicker_SelectedColorChanged(object sender, RoutedPropertyChangedEventArgs<Color?> e) => UpdateOverlay();
+    private void TextInput_Changed(object sender, TextChangedEventArgs e) => UpdateOverlay();
 
-    private void TextInput_Changed(object sender, System.Windows.Controls.TextChangedEventArgs e) => UpdateOverlay();
-
-    private void ProfileCombo_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    private void ProfileCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (_loading || ProfileCombo.SelectedItem == null) return;
         SwitchToProfile(ProfileCombo.SelectedItem.ToString() ?? "Default");
@@ -346,6 +411,7 @@ public partial class SettingsWindow : Window
                 if (imported != null)
                 {
                     _config = imported;
+                    if (_config.PixelGridMatrix == null || _config.PixelGridMatrix.Length < 256) _config.PixelGridMatrix = new string('0', 256);
                     _appState.Profiles[_appState.ActiveProfile] = _config;
                     _overlay.Config = _config;
                     _loading = true;

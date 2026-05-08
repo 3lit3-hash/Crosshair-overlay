@@ -29,10 +29,11 @@ public partial class OverlayWindow : Window
     private bool _isHiddenByProcess = false;
     private bool _isPanicHidden = false;
     private DispatcherTimer _processTimer;
-    private DispatcherTimer _invertTimer;
+    private DispatcherTimer _effectTimer;
 
     private DateTime _lastSwapTime = DateTime.MinValue;
     private DateTime _lastPanicTime = DateTime.MinValue;
+    private float _hue = 0.0f;
 
     public OverlayWindow(SettingsWindow settings)
     {
@@ -89,10 +90,10 @@ public partial class OverlayWindow : Window
         _processTimer.Tick += ProcessTimer_Tick;
         _processTimer.Start();
 
-        _invertTimer = new DispatcherTimer();
-        _invertTimer.Interval = TimeSpan.FromMilliseconds(50);
-        _invertTimer.Tick += InvertTimer_Tick;
-        _invertTimer.Start();
+        _effectTimer = new DispatcherTimer();
+        _effectTimer.Interval = TimeSpan.FromMilliseconds(16);
+        _effectTimer.Tick += EffectTimer_Tick;
+        _effectTimer.Start();
     }
 
     private void ProcessTimer_Tick(object? sender, EventArgs e)
@@ -134,12 +135,15 @@ public partial class OverlayWindow : Window
 
             var activeTargets = Config.TargetProcesses.ToLower().Split(new[] { ',' }, System.StringSplitOptions.RemoveEmptyEntries);
             bool match = false;
-            foreach (var t in activeTargets)
+            if (!string.IsNullOrEmpty(activeName))
             {
-                if (activeName.Contains(t.Trim()))
+                foreach (var t in activeTargets)
                 {
-                    match = true;
-                    break;
+                    if (activeName.Contains(t.Trim()))
+                    {
+                        match = true;
+                        break;
+                    }
                 }
             }
 
@@ -189,28 +193,45 @@ public partial class OverlayWindow : Window
         catch { }
     }
 
-    private void InvertTimer_Tick(object? sender, EventArgs e)
+    private void EffectTimer_Tick(object? sender, EventArgs e)
     {
-        if (!Config.InvertColors || CrosshairCanvas.Visibility != Visibility.Visible) return;
-        
-        var centerX = (this.Width / 2) + Config.OffsetX;
-        var centerY = (this.Height / 2) + Config.OffsetY;
+        if (CrosshairCanvas.Visibility != Visibility.Visible) return;
 
-        int offsetRadius = (int)((Config.Gap + Config.Length + Config.Thickness + Config.DotSize) * 1.5 + 5);
+        if (Config.InvertColors)
+        {
+            var centerX = (this.Width / 2) + Config.OffsetX;
+            var centerY = (this.Height / 2) + Config.OffsetY;
 
-        IntPtr hdc = GetDC(IntPtr.Zero);
-        uint pixel = GetPixel(hdc, (int)(this.Left + centerX + offsetRadius), (int)(this.Top + centerY + offsetRadius));
-        ReleaseDC(IntPtr.Zero, hdc);
+            int offsetRadius = (int)((Config.Gap + Config.Length + Config.Thickness + Config.DotSize) * 1.5 + 5);
 
-        byte r = (byte)(pixel & 0x000000FF);
-        byte g = (byte)((pixel & 0x0000FF00) >> 8);
-        byte b = (byte)((pixel & 0x00FF0000) >> 16);
+            IntPtr hdc = GetDC(IntPtr.Zero);
+            uint pixel = GetPixel(hdc, (int)(this.Left + centerX + offsetRadius), (int)(this.Top + centerY + offsetRadius));
+            ReleaseDC(IntPtr.Zero, hdc);
 
-        var inverted = Color.FromRgb((byte)(255 - r), (byte)(255 - g), (byte)(255 - b));
-        
-        foreach (var child in CrosshairCanvas.Children) {
-            if (child is Shape s && s.Stroke != null) s.Stroke = new SolidColorBrush(inverted) { Opacity = Config.Opacity };
-            if (child is Shape s2 && s2.Fill != null && s2.Fill != Brushes.Transparent) s2.Fill = new SolidColorBrush(inverted) { Opacity = Config.Opacity };
+            byte r = (byte)(pixel & 0x000000FF);
+            byte g = (byte)((pixel & 0x0000FF00) >> 8);
+            byte b = (byte)((pixel & 0x00FF0000) >> 16);
+
+            var inverted = Color.FromRgb((byte)(255 - r), (byte)(255 - g), (byte)(255 - b));
+            
+            foreach (var child in CrosshairCanvas.Children) {
+                if (child is FrameworkElement fe && fe.Tag?.ToString() == "Outline") continue;
+                if (child is Shape s && s.Stroke != null) s.Stroke = new SolidColorBrush(inverted) { Opacity = Config.Opacity };
+                if (child is Shape s2 && s2.Fill != null && s2.Fill != Brushes.Transparent) s2.Fill = new SolidColorBrush(inverted) { Opacity = Config.Opacity };
+            }
+        }
+        else if (Config.RgbChroma)
+        {
+            _hue += (float)Config.RgbSpeed;
+            if (_hue >= 360) _hue -= 360;
+            
+            var rgb = Win32Api.HsvToRgb(_hue, 1.0, 1.0);
+            foreach (var child in CrosshairCanvas.Children) 
+            {
+                if (child is FrameworkElement fe && fe.Tag?.ToString() == "Outline") continue;
+                if (child is Shape s && s.Stroke != null) s.Stroke = new SolidColorBrush(rgb) { Opacity = Config.Opacity };
+                if (child is Shape s2 && s2.Fill != null && s2.Fill != Brushes.Transparent) s2.Fill = new SolidColorBrush(rgb) { Opacity = Config.Opacity };
+            }
         }
     }
 
@@ -235,14 +256,18 @@ public partial class OverlayWindow : Window
         UpdateVisibility();
 
         var brush = new SolidColorBrush(Config.Color) { Opacity = Config.Opacity };
-        var outlineBrush = new SolidColorBrush(Colors.Black) { Opacity = Config.Opacity };
+        var outlineBrush = new SolidColorBrush(Config.OutlineColor) { Opacity = Config.Opacity };
 
         var centerX = (Width / 2) + Config.OffsetX;
         var centerY = (Height / 2) + Config.OffsetY;
 
-        if (Config.ShowCenterDot && Config.ShapeType != 4)
+        if (Config.ShowCenterDot && Config.ShapeType != 4 && Config.ShapeType != 5)
         {
-            if (Config.Outline) DrawRect(centerX - Config.DotSize / 2 - 1, centerY - Config.DotSize / 2 - 1, Config.DotSize + 2, Config.DotSize + 2, outlineBrush);
+            if (Config.Outline) 
+            {
+                var o = DrawRect(centerX - Config.DotSize / 2 - 1, centerY - Config.DotSize / 2 - 1, Config.DotSize + 2, Config.DotSize + 2, outlineBrush);
+                o.Tag = "Outline";
+            }
             DrawRect(centerX - Config.DotSize / 2, centerY - Config.DotSize / 2, Config.DotSize, Config.DotSize, brush);
         }
 
@@ -254,10 +279,7 @@ public partial class OverlayWindow : Window
         {
             DrawLine(centerX - g - l, centerY, centerX - g, centerY, t, brush, Config.Outline, outlineBrush);
             DrawLine(centerX + g, centerY, centerX + g + l, centerY, t, brush, Config.Outline, outlineBrush);
-            if (!Config.TShape)
-            {
-                DrawLine(centerX, centerY - g - l, centerX, centerY - g, t, brush, Config.Outline, outlineBrush);
-            }
+            if (!Config.TShape) DrawLine(centerX, centerY - g - l, centerX, centerY - g, t, brush, Config.Outline, outlineBrush);
             DrawLine(centerX, centerY + g, centerX, centerY + g + l, t, brush, Config.Outline, outlineBrush);
         }
         else if (Config.ShapeType == 2)
@@ -287,6 +309,37 @@ public partial class OverlayWindow : Window
             }
             catch { }
         }
+        else if (Config.ShapeType == 5 && Config.PixelGridMatrix != null && Config.PixelGridMatrix.Length == 256)
+        {
+            double ps = Config.Length; 
+            if (ps < 1) ps = 1;
+            
+            double startX = centerX - (8 * ps);
+            double startY = centerY - (8 * ps);
+            
+            if (Config.Outline)
+            {
+                for (int i = 0; i < 256; i++)
+                {
+                    if (Config.PixelGridMatrix[i] == '1')
+                    {
+                        int row = i / 16;
+                        int col = i % 16;
+                        var o = DrawRect(startX + col * ps - 1, startY + row * ps - 1, ps + 2, ps + 2, outlineBrush);
+                        o.Tag = "Outline";
+                    }
+                }
+            }
+            for (int i = 0; i < 256; i++)
+            {
+                if (Config.PixelGridMatrix[i] == '1')
+                {
+                    int row = i / 16;
+                    int col = i % 16;
+                    DrawRect(startX + col * ps, startY + row * ps, ps, ps, brush);
+                }
+            }
+        }
     }
 
     private void DrawCircle(double x, double y, double radius, double thickness, Brush brush, bool outl, Brush ob)
@@ -296,6 +349,7 @@ public partial class OverlayWindow : Window
             var outline = new Ellipse { Width = radius * 2, Height = radius * 2, Stroke = ob, StrokeThickness = thickness + 2 };
             Canvas.SetLeft(outline, x - radius);
             Canvas.SetTop(outline, y - radius);
+            outline.Tag = "Outline";
             CrosshairCanvas.Children.Add(outline);
         }
         var ellipse = new Ellipse { Width = radius * 2, Height = radius * 2, Stroke = brush, StrokeThickness = thickness };
@@ -316,6 +370,7 @@ public partial class OverlayWindow : Window
         if (outl)
         {
             var outline = new Polygon { Points = points, Stroke = ob, StrokeThickness = thickness + 2, Fill = Brushes.Transparent, StrokeLineJoin = PenLineJoin.Round };
+            outline.Tag = "Outline";
             CrosshairCanvas.Children.Add(outline);
         }
         var triangle = new Polygon { Points = points, Stroke = brush, StrokeThickness = thickness, Fill = Brushes.Transparent, StrokeLineJoin = PenLineJoin.Round };
@@ -327,18 +382,20 @@ public partial class OverlayWindow : Window
         if (outl)
         {
             var outline = new Line { X1 = x1, Y1 = y1, X2 = x2, Y2 = y2, Stroke = ob, StrokeThickness = thickness + 2 };
+            outline.Tag = "Outline";
             CrosshairCanvas.Children.Add(outline);
         }
         var line = new Line { X1 = x1, Y1 = y1, X2 = x2, Y2 = y2, Stroke = brush, StrokeThickness = thickness };
         CrosshairCanvas.Children.Add(line);
     }
 
-    private void DrawRect(double x, double y, double w, double h, Brush brush)
+    private Rectangle DrawRect(double x, double y, double w, double h, Brush brush)
     {
         var rect = new Rectangle { Width = w, Height = h, Fill = brush };
         Canvas.SetLeft(rect, x);
         Canvas.SetTop(rect, y);
         CrosshairCanvas.Children.Add(rect);
+        return rect;
     }
 
     protected override void OnClosed(EventArgs e)
@@ -346,7 +403,7 @@ public partial class OverlayWindow : Window
         MouseHook.Stop();
         KeyboardHook.Stop();
         if (_processTimer != null) _processTimer.Stop();
-        if (_invertTimer != null) _invertTimer.Stop();
+        if (_effectTimer != null) _effectTimer.Stop();
         base.OnClosed(e);
     }
 }

@@ -25,4 +25,10 @@ public class CrosshairConfig
     public bool InvertColors { get; set; } = false;
     public string PanicKeyBind { get; set; } = "F8";
     public string SwapProfileBind { get; set; } = "F9";
+    
+    // Mechanics V5
+    public Color OutlineColor { get; set; } = Colors.Black;
+    public bool RgbChroma { get; set; } = false;
+    public double RgbSpeed { get; set; } = 3.0;
+    public string PixelGridMatrix { get; set; } = new string('0', 256);
 }

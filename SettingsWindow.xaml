@@ -59,6 +59,7 @@
                 <ComboBoxItem Content="Circle (Holo)"/>
                 <ComboBoxItem Content="Triangle (Reflex)"/>
                 <ComboBoxItem Content="Custom Image (PNG)"/>
+                <ComboBoxItem Content="Pixel Builder (16x16)"/>
             </ComboBox>
 
             <Button x:Name="BrowseImageBtn" Content="Browse Custom Image..." Click="BrowseImage_Click" Visibility="Collapsed"/>
@@ -111,9 +112,22 @@
             </StackPanel>
 
             <TextBlock Text="Crosshair Color"/>
-            <xctk:ColorPicker x:Name="ColorPickerControl" SelectedColorChanged="ColorPicker_SelectedColorChanged" Background="{StaticResource ControlBg}" Foreground="White" BorderThickness="0" Margin="0,5,0,15"/>
+            <xctk:ColorPicker x:Name="ColorPickerControl" SelectedColorChanged="ColorPicker_SelectedColorChanged" Background="{StaticResource ControlBg}" Foreground="White" BorderThickness="0" Margin="0,5,0,5"/>
 
-            <Border Background="{StaticResource ControlBg}" CornerRadius="8" Padding="10" Margin="0,5,0,10">
+            <TextBlock Text="Outline Color"/>
+            <xctk:ColorPicker x:Name="OutlineColorPickerControl" SelectedColorChanged="ColorPicker_SelectedColorChanged" Background="{StaticResource ControlBg}" Foreground="White" BorderThickness="0" Margin="0,5,0,15"/>
+
+            <CheckBox x:Name="RgbChromaCheck" Content="RGB Chroma Cycle (Rainbow Mode)" Checked="Check_Changed" Unchecked="Check_Changed" Foreground="{StaticResource AccentColor}"/>
+            
+            <TextBlock x:Name="RgbSpeedText" Text="Chroma Speed"/>
+            <Slider x:Name="RgbSpeedSlider" Minimum="1" Maximum="20" ValueChanged="Slider_ValueChanged"/>
+
+            <Border x:Name="PixelGridBorder" Visibility="Collapsed" BorderBrush="{StaticResource ControlBg}" BorderThickness="1" Margin="0,15,0,10" HorizontalAlignment="Center">
+                <UniformGrid x:Name="PixelGrid" Columns="16" Rows="16" Width="240" Height="240" MouseMove="PixelGrid_MouseMove" MouseLeftButtonDown="PixelGrid_MouseMove" MouseRightButtonDown="PixelGrid_MouseMove"/>
+            </Border>
+            <Button x:Name="ClearGridBtn" Content="Clear Grid" Visibility="Collapsed" Click="ClearGridBtn_Click" HorizontalAlignment="Center" Width="100"/>
+
+            <Border Background="{StaticResource ControlBg}" CornerRadius="8" Padding="10" Margin="0,15,0,10">
                 <StackPanel>
                     <TextBlock Text="Profiles &amp; Auto-Switch" Margin="0,0,0,5" FontWeight="Bold"/>
                     <ComboBox x:Name="ProfileCombo" SelectionChanged="ProfileCombo_SelectionChanged" Background="#1E1E1E" Margin="0,0,0,5"/>
