@@ -88,6 +88,25 @@ public partial class SettingsWindow : Window
         base.OnStateChanged(e);
     }
 
+    private void TitleBar_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (e.ChangedButton == System.Windows.Input.MouseButton.Left) DragMove();
+    }
+
+    private void MinimizeBtn_Click(object sender, RoutedEventArgs e)
+    {
+        WindowState = WindowState.Minimized;
+    }
+
+    private void CloseBtn_Click(object sender, RoutedEventArgs e)
+    {
+        _forceExit = true;
+        _notifyIcon.Visible = false;
+        _notifyIcon.ContextMenuStrip?.Dispose();
+        _notifyIcon.Dispose();
+        this.Close();
+    }
+
     private void InitPixelGrid()
     {
         for (int i = 0; i < 256; i++)
